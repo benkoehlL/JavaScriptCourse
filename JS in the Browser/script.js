@@ -47,7 +47,7 @@ function checkGuess() {
           (guess < secretNumber ? 'too low.' : 'too high.')
       );
       pastGuessed.push(guess);
-      scoreCurrent -= 1;
+      scoreCurrent--;
       document.querySelector('.score').textContent = scoreCurrent;
     }
   }
