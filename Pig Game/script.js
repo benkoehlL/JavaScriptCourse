@@ -31,7 +31,7 @@ const resetGame = function () {
   hideDie();
   currentPlayer = 0;
   for (let i = 0; i < 2; i++) {
-    playerName[i].textContent = `Player ${i + 1}`;
+    playerName[i].textContent = `${NamePlayer[i]}`;
     scoreCurrent[i].textContent = 0;
     playerElement[i].classList.remove("player--winner");
   }
@@ -81,27 +81,44 @@ const checkWinningCondition = function () {
   }
 };
 
+const throwDice = function () {
+  const diceNumber = Number(Math.trunc(6 * Math.random() + 1));
+  dicePic.src = `dice-${diceNumber}.png`;
+  if (dicePic.classList.contains("hidden")) {
+    dicePic.classList.remove("hidden");
+  }
+  if (diceNumber !== 1) {
+    setCurrentScore(
+      Number(scoreCurrent[currentPlayer].textContent) + diceNumber,
+      currentPlayer
+    );
+  } else {
+    resetCurrentScore();
+    switchPlayer();
+  }
+  return diceNumber;
+};
+
 const rollDice = function () {
   if (playing) {
-    if (
-      Number(scoreBoard[0].textContent) >= winningScore ||
-      Number(scoreBoard[1].textContent) > winningScore
-    ) {
-      resetGame();
-    }
-    const diceNumber = Number(Math.trunc(6 * Math.random() + 1));
-    dicePic.src = `dice-${diceNumber}.png`;
-    if (dicePic.classList.contains("hidden")) {
-      dicePic.classList.remove("hidden");
-    }
-    if (diceNumber !== 1) {
-      setCurrentScore(
-        Number(scoreCurrent[currentPlayer].textContent) + diceNumber,
-        currentPlayer
-      );
+    if (!currentPlayer) {
+      throwDice();
     } else {
-      resetCurrentScore();
-      switchPlayer();
+      let d = throwDice();
+      let i = 0;
+      while (
+        i < 4 &&
+        d !== 1 &&
+        Number(scoreBoard[currentPlayer].textContent) +
+          Number(scoreCurrent[currentPlayer].textContent) <
+          winningScore
+      ) {
+        d = throwDice();
+        i++;
+      }
+      if (d !== 1) {
+        holdScore();
+      }
     }
   }
 };
@@ -115,9 +132,29 @@ const holdScore = function () {
   }
 };
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 btnRollDice.addEventListener("click", rollDice);
 btnHold.addEventListener("click", holdScore);
 btnNewGame.addEventListener("click", resetGame);
 let currentPlayer = 0;
 let playing;
+const NamePlayer = ["Player 1", "Player 2"];
+NamePlayer[0] = "You"; //prompt("What is the name of the first player?");
+NamePlayer[1] = "Computer"; //prompt("What is the name of the second player?");
 resetGame();
+// const statisticsDie = {
+//   1: 0,
+//   2: 0,
+//   3: 0,
+//   4: 0,
+//   5: 0,
+//   6: 0,
+// };
+// for (let i = 0; i < 100000; i++) {
+//   let d = throwDice();
+//   statisticsDie[d] += 1;
+// }
+// console.log(statisticsDie);
