@@ -132,10 +132,6 @@ const holdScore = function () {
   }
 };
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 btnRollDice.addEventListener("click", rollDice);
 btnHold.addEventListener("click", holdScore);
 btnNewGame.addEventListener("click", resetGame);
