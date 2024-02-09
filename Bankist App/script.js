@@ -7,9 +7,22 @@
 // Data
 const account1 = {
   owner: 'Jonas Schmedtmann',
-  movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
+  movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
   interestRate: 1.2, // %
   pin: 1111,
+
+  movementsDates: [
+    '2019-11-18T21:31:17.178Z',
+    '2019-12-23T07:42:02.383Z',
+    '2020-01-28T09:15:04.904Z',
+    '2020-04-01T10:17:24.185Z',
+    '2020-05-08T14:11:59.604Z',
+    '2020-05-27T17:01:17.194Z',
+    '2020-07-11T23:36:17.929Z',
+    '2020-07-12T10:51:36.790Z',
+  ],
+  currency: 'EUR',
+  locale: 'pt-PT', // de-DE
 };
 
 const account2 = {
@@ -17,23 +30,22 @@ const account2 = {
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
   pin: 2222,
+
+  movementsDates: [
+    '2019-11-01T13:15:33.035Z',
+    '2019-11-30T09:48:16.867Z',
+    '2019-12-25T06:04:23.907Z',
+    '2020-01-25T14:18:46.235Z',
+    '2020-02-05T16:33:06.386Z',
+    '2020-04-10T14:43:26.374Z',
+    '2020-06-25T18:49:59.371Z',
+    '2020-07-26T12:01:20.894Z',
+  ],
+  currency: 'USD',
+  locale: 'en-US',
 };
 
-const account3 = {
-  owner: 'Steven Thomas Williams',
-  movements: [200, -200, 340, -300, -20, 50, 400, -460],
-  interestRate: 0.7,
-  pin: 3333,
-};
-
-const account4 = {
-  owner: 'Sarah Smith',
-  movements: [430, 1000, 700, 50, 90],
-  interestRate: 1,
-  pin: 4444,
-};
-
-const accounts = [account1, account2, account3, account4];
+const accounts = [account1, account2];
 
 // Elements
 const labelWelcome = document.querySelector('.welcome');
@@ -72,38 +84,56 @@ function createUserNames(users) {
   });
 }
 
-const displayMovements = function (user) {
+const displayMovements = function (user, sort = false) {
   containerMovements.innerHTML = '';
-  user.movements.forEach(function (mov, i) {
+  const sortedMovements = sort
+    ? user.movements.slice().sort((a, b) => a - b)
+    : user.movements;
+  sortedMovements.forEach(function (mov, i) {
     const typeDeposit = mov > 0 ? 'deposit' : 'withdrawal';
+    const date = new Date(user.movementsDates[i]);
+    const day = `${date.getDate()}`.padStart(2, 0);
+    const month = `${date.getMonth()}`.padStart(2, 0);
+    const year = date.getFullYear();
+    const displayDate = `${day}/${month}/${year}`;
     const html = `
     <div class="movements__row">
       <div class="movements__type movements__type--${typeDeposit}">${
       i + 1
     } ${typeDeposit}</div>
-      <div class="movements__value">${mov}€</div>
+    <div class="movements__date">${displayDate}</div>
+      <div class="movements__value">${Number(mov).toFixed(2)}€</div>
     </div>
     `;
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
+  const lines = document.querySelectorAll('.movements__row');
+  for (const [index, line] of lines.entries()) {
+    if (index % 2) {
+      line.style.background = '#ddd';
+    } else {
+      line.style.background = '#bbb';
+    }
+  }
 };
 
 function displayBalance(user) {
-  const balance = user.movements.reduce((acc, cur) => acc + cur, 0);
-  user.balance = balance;
+  const balance = Number(user.movements.reduce((acc, cur) => acc + cur, 0));
+  user.balance = balance.toFixed(2);
   labelBalance.textContent = balance + '€';
 }
 
 function displaySumIn(user) {
   labelSumIn.textContent =
-    user.movements.filter(mov => mov > 0).reduce((acc, cur) => acc + cur, 0) +
-    '€';
+    Number(
+      user.movements.filter(mov => mov > 0).reduce((acc, cur) => acc + cur, 0)
+    ).toFixed(2) + '€';
 }
 function displaySumOut(user) {
   labelSumOut.textContent =
     Math.abs(
       user.movements.filter(mov => mov < 0).reduce((acc, cur) => acc + cur, 0)
-    ) + '€';
+    ).toFixed(2) + '€';
 }
 
 function displayInterest(user) {
@@ -117,11 +147,12 @@ function displayInterest(user) {
 }
 
 function displayMovementElements(user) {
-  displayMovements(user);
+  displayMovements(user, boolSort);
   displayBalance(user);
   displaySumIn(user);
   displaySumOut(user);
   displayInterest(user);
+  labelDate.textContent = new Date().toUTCString();
 }
 function clearLoginForm() {
   inputLoginUsername.value = inputLoginPin.value = '';
@@ -138,6 +169,17 @@ function clearTransferForm() {
 function clearLoanForm() {
   inputLoanAmount.value = inputTransferTo.value = '';
   inputLoanAmount.blur();
+}
+
+function clearCloseForm() {
+  inputCloseUsername.value = inputTransferTo.value = '';
+  inputClosePin.value = inputTransferTo.value = '';
+  inputCloseUsername.blur();
+  inputClosePin.blur();
+}
+
+function closeApp() {
+  containerApp.style.opacity = 0;
 }
 
 function displayError(text) {
@@ -163,7 +205,7 @@ btnLogin.addEventListener('click', function (event) {
     displayMessage(`Welcome back, ${currentAccount.owner.split(' ')[0]}`);
     displayMovementElements(currentAccount);
   } else {
-    containerApp.style.opacity = 0;
+    closeApp();
     displayError('You entered a wrong username or PIN');
   }
   clearLoginForm();
@@ -171,11 +213,11 @@ btnLogin.addEventListener('click', function (event) {
 
 btnTransfer.addEventListener('click', function (e) {
   e.preventDefault();
-  const amount = Number(inputTransferAmount.value);
+  const amount = Number(inputTransferAmount.value).toFixed(2);
   const recipient = accounts.find(
     acc =>
-      acc.owner === inputTransferTo.value ||
-      acc.username === inputTransferTo.value
+      acc.owner === inputTransferTo.value.toLowerCase() ||
+      acc.username === inputTransferTo.value.toLowerCase()
   );
   if (recipient) {
     if (amount < 0) {
@@ -193,6 +235,9 @@ btnTransfer.addEventListener('click', function (e) {
     } else {
       currentAccount.movements.push(-amount);
       recipient.movements.push(amount);
+      currentAccount.movementsDates.push(new Date().toUTCString());
+      recipient.movementsDates.push(new Date().toUTCString());
+
       displayMessage(
         `You transfered ${amount}€ to ${recipient.owner.split(' ')[0]}.`
       );
@@ -208,30 +253,71 @@ btnTransfer.addEventListener('click', function (e) {
 
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
-  const loan = Number(inputLoanAmount.value);
+  const loan = Number(inputLoanAmount.value).toFixed(2);
+  const maxLoan =
+    0.1 *
+    currentAccount.movements.reduce(
+      (acc, cur) => (acc < cur ? cur : acc),
+      currentAccount.movements[0]
+    );
   if (loan > 0) {
-    currentAccount.movements.push(loan);
-    currentAccount.interestRate *= 0.95;
-    displayMessage(`You took a loan of ${loan}€`);
+    if (currentAccount.movements.some(mov => loan <= maxLoan)) {
+      currentAccount.movements.push(loan);
+      currentAccount.movementsDates.push(new Date().toUTCString());
+      currentAccount.interestRate *= 0.95;
+      displayMessage(`You took a loan of ${loan}€`);
+    } else {
+      displayError(`You can not take a loan that is higher than ${maxLoan}€`);
+    }
   } else {
     displayError('You can not give a loan to the bank!');
   }
   clearLoanForm();
   displayMovementElements(currentAccount);
 });
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+  const confirmUser = inputCloseUsername.value.toLowerCase();
+  const confirmPIN = Number(inputClosePin.value);
+  if (
+    (confirmUser === currentAccount.username ||
+      confirmUser === currentAccount.owner) &&
+    confirmPIN == currentAccount.pin
+  ) {
+    const deleteIndex = accounts.findIndex(
+      acc =>
+        acc.username === currentAccount.username ||
+        acc.owner === currentAccount.owner
+    );
+    accounts.splice(deleteIndex, 1);
+    displayMessage(
+      `${currentAccount.owner.split(' ')[0]}, your account has been deleted.`
+    );
+    closeApp();
+  } else {
+    displayError('You entered a wrong username or PIN');
+  }
+  clearCloseForm();
+});
+
+btnSort.addEventListener('click', function () {
+  boolSort = !boolSort;
+  displayMovements(currentAccount, boolSort);
+});
 // initialisation
+let boolSort = false;
 createUserNames(accounts);
 let currentAccount;
-displayMovementElements(accounts.find(acc => acc.owner === 'Sarah Smith'));
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
 
 const currencies = new Map([
-  ['USD', 'United States dollar'],
+  ['USD', 'United States Dollar'],
   ['EUR', 'Euro'],
-  ['GBP', 'Pound sterling'],
+  ['GBP', 'Pound Sterling'],
 ]);
 
 const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
@@ -393,3 +479,18 @@ const minimum = movements.reduce(
 );
 
 console.log(`maximum: ${maximum}, minimum: ${minimum}`);
+
+// the FLATMAP method
+// can only go one level deep
+// for deeper levels use ARRAY.flat(n).map(...)
+const overallBalance = accounts
+  .flatMap(acc => acc.movements)
+  .reduce((acc, cur) => acc + cur, 0);
+console.log(overallBalance);
+
+// the FILL method
+const x = new Array(7).fill(0).map((_, index) => index);
+console.log(x);
+
+// the FROM method
+console.log(Array.from({ length: 7 }, (_, index) => index));
