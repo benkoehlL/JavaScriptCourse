@@ -12,14 +12,14 @@ const account1 = {
   pin: 1111,
 
   movementsDates: [
-    '2019-11-18T21:31:17.178Z',
-    '2019-12-23T07:42:02.383Z',
-    '2020-01-28T09:15:04.904Z',
-    '2020-04-01T10:17:24.185Z',
-    '2020-05-08T14:11:59.604Z',
-    '2020-05-27T17:01:17.194Z',
-    '2020-07-11T23:36:17.929Z',
-    '2020-07-12T10:51:36.790Z',
+    '2023-11-18T21:31:17.178Z',
+    '2023-12-23T07:42:02.383Z',
+    '2023-01-28T09:15:04.904Z',
+    '2023-04-01T10:17:24.185Z',
+    '2023-05-08T14:11:59.604Z',
+    '2023-05-27T17:01:17.194Z',
+    '2023-07-11T23:36:17.929Z',
+    '2024-02-07T10:51:36.790Z',
   ],
   currency: 'EUR',
   locale: 'pt-PT', // de-DE
@@ -32,14 +32,14 @@ const account2 = {
   pin: 2222,
 
   movementsDates: [
-    '2019-11-01T13:15:33.035Z',
-    '2019-11-30T09:48:16.867Z',
-    '2019-12-25T06:04:23.907Z',
-    '2020-01-25T14:18:46.235Z',
-    '2020-02-05T16:33:06.386Z',
-    '2020-04-10T14:43:26.374Z',
-    '2020-06-25T18:49:59.371Z',
-    '2020-07-26T12:01:20.894Z',
+    '2023-11-01T13:15:33.035Z',
+    '2023-11-30T09:48:16.867Z',
+    '2023-12-25T06:04:23.907Z',
+    '2023-01-25T14:18:46.235Z',
+    '2023-02-05T16:33:06.386Z',
+    '2023-04-10T14:43:26.374Z',
+    '2023-06-25T18:49:59.371Z',
+    '2024-02-11T12:01:20.894Z',
   ],
   currency: 'USD',
   locale: 'en-US',
@@ -84,25 +84,53 @@ function createUserNames(users) {
   });
 }
 
+function displayDate(date, locale = locale) {
+  const timePast = Math.round(
+    Number(new Date() - date) / (1000 * 60 * 60 * 24)
+  );
+  if (timePast === 0) return 'today';
+  if (timePast === 1) return 'yesterday';
+  if (timePast <= 7) return `${Math.round(timePast)} days ago`;
+  return new Intl.DateTimeFormat(locale).format(date);
+}
+
+function createMovementsWithDate(accounts) {
+  accounts.forEach(function (acc, index, arr) {
+    acc.movementsWithDate = acc.movements.map((mov, index) => {
+      return { movement: mov, date: acc.movementsDates[index] };
+    });
+  });
+}
+
+function addAmountToMovement(account, amount) {
+  account.movements.push(Number(amount));
+  account.movementsDates.push(new Date().toUTCString());
+  account.movementsWithDate.push({
+    movement: Number(amount),
+    date: new Date().toUTCString(),
+  });
+}
+
 const displayMovements = function (user, sort = false) {
   containerMovements.innerHTML = '';
   const sortedMovements = sort
-    ? user.movements.slice().sort((a, b) => a - b)
-    : user.movements;
+    ? user.movementsWithDate.slice().sort((a, b) => a.movement - b.movement)
+    : user.movementsWithDate;
   sortedMovements.forEach(function (mov, i) {
-    const typeDeposit = mov > 0 ? 'deposit' : 'withdrawal';
-    const date = new Date(user.movementsDates[i]);
-    const day = `${date.getDate()}`.padStart(2, 0);
-    const month = `${date.getMonth()}`.padStart(2, 0);
-    const year = date.getFullYear();
-    const displayDate = `${day}/${month}/${year}`;
+    const typeDeposit = mov.movement > 0 ? 'deposit' : 'withdrawal';
     const html = `
     <div class="movements__row">
       <div class="movements__type movements__type--${typeDeposit}">${
       i + 1
     } ${typeDeposit}</div>
-    <div class="movements__date">${displayDate}</div>
-      <div class="movements__value">${Number(mov).toFixed(2)}€</div>
+    <div class="movements__date">${displayDate(
+      new Date(mov.date),
+      currentAccount.locale
+    )}</div>
+      <div class="movements__value">${Intl.NumberFormat(user.locale, {
+        style: 'currency',
+        currency: user.currency,
+      }).format(mov.movement)}</div>
     </div>
     `;
     containerMovements.insertAdjacentHTML('afterbegin', html);
@@ -119,31 +147,41 @@ const displayMovements = function (user, sort = false) {
 
 function displayBalance(user) {
   const balance = Number(user.movements.reduce((acc, cur) => acc + cur, 0));
-  user.balance = balance.toFixed(2);
-  labelBalance.textContent = balance + '€';
+  user.balance = balance;
+  labelBalance.textContent = Intl.NumberFormat(user.locale, {
+    style: 'currency',
+    currency: user.currency,
+  }).format(balance);
 }
 
 function displaySumIn(user) {
-  labelSumIn.textContent =
-    Number(
-      user.movements.filter(mov => mov > 0).reduce((acc, cur) => acc + cur, 0)
-    ).toFixed(2) + '€';
+  labelSumIn.textContent = Intl.NumberFormat(user.locale, {
+    style: 'currency',
+    currency: user.currency,
+  }).format(
+    user.movements.filter(mov => mov > 0).reduce((acc, cur) => acc + cur, 0)
+  );
 }
 function displaySumOut(user) {
-  labelSumOut.textContent =
-    Math.abs(
-      user.movements.filter(mov => mov < 0).reduce((acc, cur) => acc + cur, 0)
-    ).toFixed(2) + '€';
+  labelSumOut.textContent = Intl.NumberFormat(user.locale, {
+    style: 'currency',
+    currency: user.currency,
+  }).format(
+    user.movements.filter(mov => mov < 0).reduce((acc, cur) => acc + cur, 0)
+  );
 }
 
 function displayInterest(user) {
-  labelSumInterest.textContent =
+  labelSumInterest.textContent = Intl.NumberFormat(user.locale, {
+    style: 'currency',
+    currency: user.currency,
+  }).format(
     user.movements
       .filter(mov => mov > 0)
       .map(deposit => (deposit * user.interestRate) / 100)
       .filter(int => int >= 1)
       .reduce((acc, int) => acc + int, 0)
-      .toFixed(2) + '€';
+  );
 }
 
 function displayMovementElements(user) {
@@ -152,7 +190,13 @@ function displayMovementElements(user) {
   displaySumIn(user);
   displaySumOut(user);
   displayInterest(user);
-  labelDate.textContent = new Date().toUTCString();
+  labelDate.textContent = Intl.DateTimeFormat(user.locale, {
+    hour: 'numeric',
+    minute: 'numeric',
+    day: 'numeric',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date());
 }
 function clearLoginForm() {
   inputLoginUsername.value = inputLoginPin.value = '';
@@ -191,6 +235,27 @@ function displayMessage(text) {
   navigator.style.background = 'rgb(170 170 170)';
   labelWelcome.textContent = text;
 }
+
+const startLogOutTimer = function () {
+  let time = 5 * 60;
+  return setInterval(() => {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+    labelTimer.textContent = `${min}:${sec}`;
+    if (time <= 0) {
+      closeApp();
+      displayMessage('You have been logged out automatically.');
+      clearInterval(timer);
+    }
+    time--;
+  }, 1000);
+};
+
+const resetTimer = function () {
+  clearInterval(timer);
+  timer = startLogOutTimer();
+};
+
 // Event handlers
 btnLogin.addEventListener('click', function (event) {
   event.preventDefault();
@@ -199,11 +264,14 @@ btnLogin.addEventListener('click', function (event) {
       acc.username === inputLoginUsername.value &&
       acc.pin === Number(inputLoginPin.value)
   );
+
   if (searchAccount) {
     currentAccount = searchAccount;
     containerApp.style.opacity = 1;
     displayMessage(`Welcome back, ${currentAccount.owner.split(' ')[0]}`);
     displayMovementElements(currentAccount);
+    if (timer) clearInterval(timer);
+    timer = startLogOutTimer();
   } else {
     closeApp();
     displayError('You entered a wrong username or PIN');
@@ -213,6 +281,7 @@ btnLogin.addEventListener('click', function (event) {
 
 btnTransfer.addEventListener('click', function (e) {
   e.preventDefault();
+  resetTimer();
   const amount = Number(inputTransferAmount.value).toFixed(2);
   const recipient = accounts.find(
     acc =>
@@ -228,18 +297,24 @@ btnTransfer.addEventListener('click', function (e) {
       currentAccount.username === recipient.username
     ) {
       displayError(`You can not transfer money to yourself.`);
-    } else if (amount > currentAccount.balance) {
+    } else if (Number(amount) > Number(currentAccount.balance)) {
       displayError(
-        `You do not have enough money to make an transfer of ${amount}€.`
+        `You do not have enough money to make an transfer of ${Intl.NumberFormat(
+          currentAccount.locale,
+          {
+            style: 'currency',
+            currency: currentAccount.currency,
+          }
+        ).format(amount)}.`
       );
     } else {
-      currentAccount.movements.push(-amount);
-      recipient.movements.push(amount);
-      currentAccount.movementsDates.push(new Date().toUTCString());
-      recipient.movementsDates.push(new Date().toUTCString());
-
+      addAmountToMovement(currentAccount, -amount);
+      addAmountToMovement(recipient, amount);
       displayMessage(
-        `You transfered ${amount}€ to ${recipient.owner.split(' ')[0]}.`
+        `You transfered ${Intl.NumberFormat(currentAccount.locale, {
+          style: 'currency',
+          currency: currentAccount.currency,
+        }).format(amount)} to ${recipient.owner.split(' ')[0]}.`
       );
     }
     displayMovementElements(currentAccount);
@@ -253,6 +328,7 @@ btnTransfer.addEventListener('click', function (e) {
 
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
+  resetTimer();
   const loan = Number(inputLoanAmount.value).toFixed(2);
   const maxLoan =
     0.1 *
@@ -260,20 +336,43 @@ btnLoan.addEventListener('click', function (e) {
       (acc, cur) => (acc < cur ? cur : acc),
       currentAccount.movements[0]
     );
-  if (loan > 0) {
-    if (currentAccount.movements.some(mov => loan <= maxLoan)) {
-      currentAccount.movements.push(loan);
-      currentAccount.movementsDates.push(new Date().toUTCString());
-      currentAccount.interestRate *= 0.95;
-      displayMessage(`You took a loan of ${loan}€`);
-    } else {
-      displayError(`You can not take a loan that is higher than ${maxLoan}€`);
-    }
-  } else {
-    displayError('You can not give a loan to the bank!');
-  }
+  displayMessage(
+    `We are checking your loan request of ${Intl.NumberFormat(
+      currentAccount.locale,
+      {
+        style: 'currency',
+        currency: currentAccount.currency,
+      }
+    ).format(loan)}.`
+  );
   clearLoanForm();
-  displayMovementElements(currentAccount);
+  const loanTimer = setTimeout(function () {
+    if (loan > 0) {
+      if (currentAccount.movements.some(mov => loan <= maxLoan)) {
+        addAmountToMovement(currentAccount, loan);
+        currentAccount.interestRate *= 0.95;
+        displayMessage(
+          `You took a loan of ${Intl.NumberFormat(currentAccount.locale, {
+            style: 'currency',
+            currency: currentAccount.currency,
+          }).format(loan)}`
+        );
+      } else {
+        displayError(
+          `You can not take a loan that is higher than ${Intl.NumberFormat(
+            currentAccount.locale,
+            {
+              style: 'currency',
+              currency: currentAccount.currency,
+            }
+          ).format(maxLoan)}`
+        );
+      }
+    } else {
+      displayError('You can not give a loan to the bank!');
+    }
+    displayMovementElements(currentAccount);
+  }, 1000 * 0.5 * 60);
 });
 
 btnClose.addEventListener('click', function (e) {
@@ -307,8 +406,11 @@ btnSort.addEventListener('click', function () {
 });
 // initialisation
 let boolSort = false;
+const locale = navigator.language;
 createUserNames(accounts);
+createMovementsWithDate(accounts);
 let currentAccount;
+let timer;
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -494,3 +596,39 @@ console.log(x);
 
 // the FROM method
 console.log(Array.from({ length: 7 }, (_, index) => index));
+
+// Timer functions
+// timout
+let ingredients = ['olives', 'spinach'];
+function printIngredientsUponDelivery(ingredients) {
+  console.log(
+    `Here is your Pizza with ${ingredients
+      .map((value, index) => `fresh ${value} `)
+      .join('and ')}`
+  );
+}
+const timer1 = setTimeout(
+  ingredients => printIngredientsUponDelivery(ingredients),
+  3000,
+  ingredients
+);
+console.log('Waiting...');
+if (ingredients.includes('spinach')) {
+  clearTimeout(timer1);
+  ingredients[ingredients.indexOf('spinach')] = 'Ananas';
+  console.log('Delivery cancelled. Delivering with Ananas instead');
+}
+const timer2 = setTimeout(
+  ingredients => printIngredientsUponDelivery(ingredients),
+  3000,
+  ingredients
+);
+
+// setIntervall
+const interval1 = setInterval(() => {
+  console.log(new Date());
+}, 1000);
+
+setTimeout(() => {
+  clearInterval(interval1);
+}, 1000 * 60);
