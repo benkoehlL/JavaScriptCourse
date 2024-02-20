@@ -8,7 +8,11 @@ const overlay = document.querySelector(".overlay");
 const nav = document.querySelector(".nav");
 const btnCloseModal = document.querySelector(".btn--close-modal");
 const btnsOpenModal = document.querySelectorAll(".btn--show-modal");
+const slides = document.querySelectorAll(".slide");
+const allSection = document.querySelectorAll(".section");
 const btnScrollTo = document.querySelector(".btn--scroll-to");
+const btnLeft = document.querySelector(".slider__btn--left");
+const btnRight = document.querySelector(".slider__btn--right");
 const sec1 = document.getElementById("section--1");
 const sec2 = document.getElementById("section--2");
 const sec3 = document.getElementById("section--3");
@@ -75,25 +79,25 @@ btnCloseModal.addEventListener("click", closeModal);
 overlay.addEventListener("click", closeModal);
 
 // Page navigation
-document.querySelectorAll(".nav__link").forEach((link) => {
-  if (!link.classList.contains("nav__link--btn")) {
-    document.addEventListener("scroll", (e) => {
-      const associatedSection = document.querySelector(
-        link.getAttribute("href")
-      );
-      const coordinateY = associatedSection.getBoundingClientRect().top;
+// document.querySelectorAll(".nav__link").forEach((link) => {
+//   if (!link.classList.contains("nav__link--btn")) {
+//     document.addEventListener("scroll", (e) => {
+//       const associatedSection = document.querySelector(
+//         link.getAttribute("href")
+//       );
+//       const coordinateY = associatedSection.getBoundingClientRect().top;
 
-      if (coordinateY < 0) {
-        document.querySelectorAll(".nav__link").forEach((el) => {
-          resetLinksColour();
-          setLinkColour(link);
-        });
-      } else {
-        resetLinkColour(link);
-      }
-    });
-  }
-});
+//       if (coordinateY < 0) {
+//         document.querySelectorAll(".nav__link").forEach((el) => {
+//           resetLinksColour();
+//           setLinkColour(link);
+//         });
+//       } else {
+//         resetLinkColour(link);
+//       }
+//     });
+//   }
+// });
 
 cookieBtn.addEventListener("click", () => {
   message.remove();
@@ -203,15 +207,88 @@ nav.addEventListener("mouseout", (e) => {
 // sticky navigation (intersection observer API)
 const obsCallback = function (entries, observer) {
   entries.forEach((entry) => {
-    console.log(entries);
+    nav.querySelectorAll(".nav__link").forEach((link) => {
+      if (!link.classList.contains("nav__link--btn")) {
+        if (
+          link.getAttribute("href").slice(1) === entry.target.getAttribute("id")
+        ) {
+          if (entry.isIntersecting) {
+            resetLinksColour();
+            setLinkColour(link);
+          } else {
+            resetLinkColour(link);
+          }
+        }
+      }
+    });
   });
 };
+
 const obsOptions = {
   root: null,
-  threshold: [0, 0.2],
+  threshold: [0],
+  rootMargin: `-${nav.offsetHeight}px`,
 };
-const observer = new IntersectionObserver(obsCallback, obsOptions);
-observer.observe(sec1);
+
+const navObserver = new IntersectionObserver(obsCallback, obsOptions);
+
+// reveal section when scrolling
+const revealSection = function (entries, observer) {
+  const [entry] = entries;
+  entry.target.classList.remove("section--hidden");
+  observer.unobserve(entry.target);
+};
+
+const sectionObserver = new IntersectionObserver(revealSection, {
+  root: null,
+  threshold: 0.15,
+});
+allSection.forEach(function (section) {
+  navObserver.observe(section);
+  sectionObserver.observe(section);
+  section.classList.add("section--hidden");
+});
+
+// lazy loading images
+const imageTargets = document.querySelectorAll("img[data-src]");
+const loadImage = function (entries, observer) {
+  const [entry] = entries;
+  if (!entry.isIntersecting) return;
+  entry.target.src = entry.target.dataset.src;
+  entry.target.addEventListener("load", () => {
+    entry.target.classList.remove("lazy-img");
+  });
+  observer.unobserve(entry.target);
+};
+
+const imageObserver = new IntersectionObserver(loadImage, {
+  root: null,
+  threshold: 0,
+  rootMargin: `-200px`,
+});
+imageTargets.forEach((img) => imageObserver.observe(img));
+
+// slider functions
+function displayNewSlide(s) {
+  slides.forEach((slide, i) => {
+    slide.style.transform = `translateX(${(i - s) * 100}%)`;
+  });
+}
+
+btnRight.addEventListener("click", () => {
+  currentSlide = (currentSlide + 1) % slides.length;
+  displayNewSlide(currentSlide);
+});
+
+btnLeft.addEventListener("click", () => {
+  if (currentSlide === 0) {
+    currentSlide = slides.length - 1;
+  } else {
+    currentSlide = currentSlide - 1;
+  }
+  displayNewSlide(currentSlide);
+});
+
 // initialisation
 nav.style.position = "fixed";
 nav.style.top = 0;
@@ -226,6 +303,10 @@ message.style.background = "#37383d";
 message.style.width = "100%";
 message.style.height =
   Number.parseFloat(getComputedStyle(message).height, 10) + 30 + "px";
+
+// initialise the slider
+let currentSlide = 0;
+displayNewSlide(currentSlide);
 // exercises
 
 //styles
