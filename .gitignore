@@ -13,7 +13,7 @@
 # folders
 */dist/
 */node_modules/
-
+*/.parcel-cache/
 # Package Files #
 *.jar
 *.war
