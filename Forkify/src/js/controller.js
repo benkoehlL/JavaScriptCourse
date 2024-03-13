@@ -14,7 +14,7 @@ const timeout = function (s) {
 // https://forkify-api.herokuapp.com/v2
 
 ///////////////////////////////////////
-const renderSpsinner = function (parentEl) {
+const renderSpinner = function (parentEl) {
   const markup = `
         <div class="spinner">
         <svg>
