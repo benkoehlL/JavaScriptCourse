@@ -2,10 +2,10 @@
   "name": "forkify",
   "version": "1.0.0",
   "description": "recipe application",
-  "main": "index.js",
+  "default": "index.js",
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html"
+    "build": "parcel build index.html --dist-dir ./dist"
   },
   "author": "Benjamin Köhler",
   "license": "ISC",
@@ -17,5 +17,19 @@
   },
   "devDependencies": {
     "@parcel/transformer-sass": "^2.12.0"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benkoehlL/JavaScriptCourse.git"
+  },
+  "keywords": [
+    "coding",
+    "school",
+    "javascript"
+  ],
+  "bugs": {
+    "url": "https://github.com/benkoehlL/JavaScriptCourse/issues"
+  },
+  "homepage": "https://github.com/benkoehlL/JavaScriptCourse#readme"
 }
